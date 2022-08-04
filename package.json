@@ -1,0 +1,17 @@
+{
+  "name": "zoomontime",
+  "version": "1.0.0",
+  "description": "Joins your zoom meetings so you don't have to watch the clock.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/zoomOnTime.js"
+  },
+  "author": "Ryan Shillington",
+  "license": "MIT",
+  "dependencies": {
+    "googleapis": "^39.2.0",
+    "opener": "^1.5.2",
+    "systray2": "^2.1.4"
+  },
+  "keywords": []
+}
