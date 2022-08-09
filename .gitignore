@@ -2,6 +2,10 @@
 # ----------
 node_modules
 
+# Package output
+deploy/win32/build
+dist
+
 # GCalendar files
 # ----------
 credentials.json
