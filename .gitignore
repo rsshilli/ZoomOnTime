@@ -4,7 +4,7 @@ node_modules
 
 # Package output
 # --------------
-/deploy/win32/build/
+/deploy/win32/build
 /dist/
 
 # GCalendar files

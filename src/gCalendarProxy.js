@@ -1,7 +1,9 @@
-const fs = require('fs').promises;
-const readline = require('readline');
-const {google} = require('googleapis');
-const opener = require("opener");
+import fullFS from 'fs';
+
+const fs = fullFS.promises;
+import readline from 'readline';
+import { google } from 'googleapis';
+import opener from "opener";
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
@@ -10,7 +12,7 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
 // time.
 const TOKEN_PATH = 'token.json';
 
-class GCalendarProxy {
+export default class GCalendarProxy {
   constructor() {
   }
 
@@ -19,7 +21,8 @@ class GCalendarProxy {
     try {
       let content = await fs.readFile('credentials.json');
       content = Buffer.from(content).toString();
-      console.log("Found content:", content);
+      // Uncomment for verbose logging
+      // console.log("Found content:", content);
 
       // Authorize a client with credentials, then call the Google Calendar API.
       await this.authorize(JSON.parse(content));
@@ -41,7 +44,8 @@ class GCalendarProxy {
     try {
       let token = await fs.readFile(TOKEN_PATH);
       token = Buffer.from(token).toString();
-      console.log("Found token:", token);
+      // Uncomment for verbose logging
+      // console.log("Found token:", token);
       oAuth2Client.setCredentials(JSON.parse(token));
       this.auth = oAuth2Client;
     } catch (err) {
@@ -101,11 +105,12 @@ class GCalendarProxy {
       const returnEvents = [];
       if (events.length) {
         console.log(`Upcoming ${maxResults} events:`);
-        events.map((event, i) => {
+        events.map((event) => {
           returnEvents.push({
+            id: event.id,
             start: event.start.dateTime || event.start.date,
             summary: event.summary,
-            zoomLocation: this.getZoomLocation(event),
+            meetingLocation: this.getZoomLocation(event),
           });
           // Uncomment for verbose debugging
           //console.log("Found Event:", event.summary, "with conf data:", event.conferenceData);
@@ -121,12 +126,10 @@ class GCalendarProxy {
   }
 
   getZoomLocation(event) {
-    if(event.conferenceData?.entryPoints) {
+    if (event.conferenceData?.entryPoints) {
       return event.conferenceData.entryPoints[0].uri;
     } else {
       return event.location;
     }
   }
 }
-
-module.exports = GCalendarProxy;
