@@ -1,9 +1,9 @@
 import fullFS from 'fs';
-
-const fs = fullFS.promises;
 import readline from 'readline';
 import { google } from 'googleapis';
 import opener from "opener";
+
+const fs = fullFS.promises;
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
@@ -72,7 +72,8 @@ export default class GCalendarProxy {
       output: process.stdout,
     });
     let code = await new Promise(resolve => rl.question('Enter the code from that page here: ', resolve));
-    console.log("Received code:", code);
+    // Uncomment for verbose logging
+    // console.log("Received code:", code);
     rl.close();
     try {
       const token = (await oAuth2Client.getToken(code)).tokens;
@@ -109,11 +110,12 @@ export default class GCalendarProxy {
           returnEvents.push({
             id: event.id,
             start: event.start.dateTime || event.start.date,
+            end: event.end.dateTime || event.end.date,
             summary: event.summary,
             meetingLocation: this.getZoomLocation(event),
           });
           // Uncomment for verbose debugging
-          //console.log("Found Event:", event.summary, "with conf data:", event.conferenceData);
+          //console.log("Found Event:", event);
         });
       } else {
         console.log('No upcoming events found.');
@@ -129,7 +131,18 @@ export default class GCalendarProxy {
     if (event.conferenceData?.entryPoints) {
       return event.conferenceData.entryPoints[0].uri;
     } else {
-      return event.location;
+      const urlFromLocation = this.findURL(event.location);
+      if (urlFromLocation) {
+        return urlFromLocation;
+      }
+
+      return this.findURL(event.description);
     }
+  }
+
+  findURL(someString) {
+    const urlRegex = /(https?:\/\/[^\s"]+)/gi;
+    const match = someString?.match(urlRegex);
+    return match && match[0];
   }
 }
