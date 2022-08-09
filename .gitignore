@@ -1,10 +1,11 @@
 # Node Modules
-# ----------
+# ------------
 node_modules
 
 # Package output
-deploy/win32/build
-dist
+# --------------
+/deploy/win32/build/
+/dist/
 
 # GCalendar files
 # ----------
