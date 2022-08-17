@@ -105,7 +105,8 @@ export default class GCalendarProxy {
       const events = res.data.items;
       const returnEvents = [];
       if (events.length) {
-        console.log(`Upcoming ${maxResults} events:`);
+        // Uncomment for verbose logging
+        // console.log(`Upcoming ${maxResults} events:`);
         events.map((event) => {
           returnEvents.push({
             id: event.id,
