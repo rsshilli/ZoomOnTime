@@ -10,21 +10,24 @@ const icon = new QIcon(bellIcon);
  * @returns {string} The number of minutes:seconds to wait.
  */
 export function formatTimeRemaining(waitTime) {
-  const remainingTimeInSeconds = Math.floor(waitTime / 1000);
+  const isNegative = waitTime < 0;
+  const remainingTimeInSeconds = Math.abs(Math.floor(waitTime / 1000));
   const remainingHours = ("" + (Math.floor(remainingTimeInSeconds / (60 * 60)))).padStart(2, "0");
   const remainingMins = ("" + (Math.floor(remainingTimeInSeconds / 60) % 60)).padStart(2, "0");
   const remainingSeconds = ("" + remainingTimeInSeconds % 60).padStart(2, "0");
-  return (remainingHours === "00" ? "" : remainingHours + ":") + remainingMins + ":" + remainingSeconds;
+  return (isNegative ? "-" : "")
+    + (remainingHours === "00" ? "" : remainingHours + ":")
+    + remainingMins + ":" + remainingSeconds;
 }
 
 function CountDownWindow(props) {
-  const thisEventId = props.event.id;
   const thisEventSummary = props.event.summary;
   const thisEventEndTime = new Date(props.event.end);
   const [ignored, forceUpdate] = useReducer(x => x + 1, 0);
   const remainingTime = thisEventEndTime.getTime() - Date.now();
   const remainingTimeAsString = formatTimeRemaining(remainingTime);
-  let notMuchTimeLeft = remainingTime <= 5 * 60 * 1000;
+  const notMuchTimeLeft = remainingTime <= 5 * 60 * 1000;
+  const overTime = remainingTime < 0;
 
   useEffect(() => {
     // Update this countdown every second.
@@ -33,18 +36,21 @@ function CountDownWindow(props) {
   });
 
   return (
-    <Dialog windowTitle={`${notMuchTimeLeft ? "Wrap it up!" : "Counting down the time left"} (${thisEventSummary})`}
+    <Dialog windowTitle={`${overTime ? "YOU ARE OVER TIME!" : notMuchTimeLeft ? "Wrap it up!" : "Counting down the time left"} (${thisEventSummary})`}
             windowIcon={icon}
             on={{
-              accepted: () => console.log("Dialog accepted."),
-              finished: () => console.log("Dialog finished."),
-              rejected: () => console.log("Dialog rejected."),
+              Close: () => props.on.Close && props.on.Close(),
+            }}
+            minSize={{
+              width: 100, height: 100
             }}
     >
       <View minSize={{width: 20, height: 20}}>
         <Text style={headerStyle}>{thisEventSummary} ends at {thisEventEndTime.toLocaleTimeString()}</Text>
         <Text style={timerStyle}>{remainingTimeAsString}</Text>
-        {notMuchTimeLeft ? (
+        {overTime ? (
+          <Text style={subTextStyle}>YOU ARE OVER TIME! END IT.</Text>
+        ) : notMuchTimeLeft ? (
           <Text style={subTextStyle}>Do you need a bio-break? More water? Wrap it up.</Text>
         ) : null}
       </View>

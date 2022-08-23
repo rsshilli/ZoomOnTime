@@ -112,7 +112,7 @@ export default class GCalendarProxy {
             id: event.id,
             start: event.start.dateTime || event.start.date,
             end: event.end.dateTime || event.end.date,
-            summary: event.summary,
+            summary: event.summary || "(No title)",
             meetingLocation: this.getZoomLocation(event),
           });
           // Uncomment for verbose debugging

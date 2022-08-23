@@ -18,6 +18,8 @@ function App() {
   const [isStartup, setIsStartup] = useState(true);
   const [events, setEvents] = useState([]);
   const eventIdToCheckedMapRef = useRef(new Map());
+  const eventIdToHasStartedRef = useRef(new Map());
+  const eventIdToHasShownPopupRef = useRef(new Map());
   const [showCounter, setShowCounter] = useState(false);
   const [counterEvent, setCounterEvent] = useState(null);
 
@@ -27,6 +29,8 @@ function App() {
     await gcProxy.init();
     const events = await gcProxy.listEvents();
     const eventIdToCheckedMap = eventIdToCheckedMapRef.current;
+    const eventIdToHasStarted = eventIdToHasStartedRef.current;
+    const eventIdToHasShownPopup = eventIdToHasShownPopupRef.current;
 
     // Uncomment for verbose logging
     // console.log("Clearing previous timeouts...");
@@ -35,7 +39,11 @@ function App() {
     }
 
     for (const event of events) {
+      // Initialize tracking the state
       eventIdToCheckedMap.set(event.id, eventIdToCheckedMap.has(event.id) ? eventIdToCheckedMap.get(event.id) : !!event.meetingLocation);
+      eventIdToHasStarted.set(event.id, eventIdToHasStarted.has(event.id) ? eventIdToHasStarted.get(event.id) : false);
+      eventIdToHasShownPopup.set(event.id, eventIdToHasShownPopup.has(event.id) ? eventIdToHasShownPopup.get(event.id) : false);
+
       const startTime = new Date(event.start);
       const endTime = new Date(event.end); // TODO: Use this to popup a window with 5 mins left.
       const waitTimeForJoining = startTime.getTime() - new Date().getTime() - (30 * 1000); // Join 30 seconds before the meeting starts.
@@ -51,6 +59,7 @@ function App() {
         timeouts.push(createTimeoutToShowPopupWindow(waitTimeForPopup, event));
       }
     }
+    console.log("Memory usage:", process.memoryUsage());
     setEvents(events);
   }
 
@@ -67,25 +76,31 @@ function App() {
   }
 
   function startMeeting(event) {
+    console.log("Memory usage:", process.memoryUsage());
     const eventIdToCheckedMap = eventIdToCheckedMapRef.current;
-    if (eventIdToCheckedMap.get(event.id)) {
+    const eventIdToHasStarted = eventIdToHasStartedRef.current;
+    if (eventIdToCheckedMap.get(event.id) && !eventIdToHasStarted.get(event.id)) {
       console.log("Starting", event.meetingLocation);
       opener(event.meetingLocation);
       setShowCounter(false);
+      eventIdToHasStarted.set(event.id, true);
     } else {
-      console.log("Not starting", event, "because it's unchecked.", eventIdToCheckedMap);
+      console.log(`Not starting ${formatEvent(event)} because it's checked: ${eventIdToCheckedMap.get(event.id)} / started: ${eventIdToHasStarted.get(event.id)}.`);
     }
   }
 
   function showPopup(event) {
+    console.log("Memory usage:", process.memoryUsage());
     const eventIdToCheckedMap = eventIdToCheckedMapRef.current;
-    if (eventIdToCheckedMap.get(event.id)) {
-      console.log("Warning about", event.meetingLocation);
+    const eventIdToHasShownPopup = eventIdToHasShownPopupRef.current;
+    if (eventIdToCheckedMap.get(event.id) && !eventIdToHasShownPopup.get(event.id)) {
+      console.log(`Warning about ${formatEvent(event)}`);
       setShowCounter(false);
       setCounterEvent(event);
       setShowCounter(true);
+      eventIdToHasShownPopup.set(event.id, true);
     } else {
-      console.log("Not warning about", formatEvent(event), "because it's unchecked.", eventIdToCheckedMap);
+      console.log(`Not warning about ${formatEvent(event)} because it's checked: ${eventIdToCheckedMap.get(event.id)} / Shown: ${eventIdToHasShownPopup.get(event.id)}.`);
     }
   }
 
@@ -99,12 +114,11 @@ function App() {
       loadEvents();
 
       // Refresh every few mins
-      // TODO: Uncomment this when the problem of starting meetings every 2 mins is fixed.
-      // setInterval(() => {
-      //   console.log("Loading events periodically...");
-      //   // noinspection JSIgnoredPromiseFromCall
-      //   loadEvents();
-      // }, 2 * 60 * 1000);
+      setInterval(() => {
+        console.log("Loading events periodically...");
+        // noinspection JSIgnoredPromiseFromCall
+        loadEvents();
+      }, 2 * 60 * 1000);
     }
   });
 
@@ -131,19 +145,6 @@ function App() {
             console.log("New EventIdToCheckedMap:", eventIdToCheckedMap);
           }
         }}
-        // menu={ // This doesn't work, unfortunately. See https://github.com/nodegui/react-nodegui/issues/375
-        //   <Menu>
-        //     <Action
-        //       text="Open video conferencing"
-        //       on={{
-        //         triggered: () => {
-        //           console.log("Opening:", event.meetingLocation);
-        //           opener(event.meetingLocation);
-        //         }
-        //       }}
-        //     />
-        //   </Menu>
-        // }
       />);
     }
 
@@ -197,7 +198,13 @@ function App() {
       </Menu>
     </SystemTrayIcon>
     {showCounter ? (
-      <CountDownWindow event={counterEvent} />
+      <CountDownWindow event={counterEvent} on={{
+        Close: () => {
+          const eventIdToHasShownPopup = eventIdToHasShownPopupRef.current;
+          eventIdToHasShownPopup.set(counterEvent.id, false);
+        }
+      }}
+      />
     ) : null}
   </>);
 }
