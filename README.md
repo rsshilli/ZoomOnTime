@@ -11,3 +11,21 @@ You'll have to start with Node 10.x or higher. Pull these files and then:
 npm install
 npm start
 ```
+
+Initial Setup
+----------
+The first time you run the program, it open your browser and ask you to giver permission to access your Google Calendar. 
+After accepting it, it will redirect to localhost and go to a URL like:
+```
+http://localhost:3000/?code=4/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX&scope=https://www.googleapis.com/auth/calendar.readonly
+```
+The code you need to provide on the command line is the value for the `code` query parameter in the URL.
+
+After Expiration
+----------
+If you've been using this program for a year or more, you might find your token expired. If that happens, it won't load your 
+Google Calendar anymore and you'll have to re-authenticate. Just delete the `token.json` file and run the program again:
+```shell
+del token.json
+npm start
+```
